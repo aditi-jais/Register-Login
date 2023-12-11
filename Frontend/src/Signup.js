@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import Validation from "./SignupValidation"
+import axios from 'axios'
+import { useNavigate } from 'react-router-dom';
+
 
 function Signup(){
 
@@ -9,13 +12,34 @@ function Signup(){
         password: "",
         confirmpassword: ""
     })
-    const handleInput=(event)=>{
-        setValues((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+    const navigate = useNavigate();
+    // const[errors,setErrors]=useState({
+    //   username: "",
+    //     email: "",
+    //     password: "",
+    //     confirmpassword: ""
+    // })
+    const handleInput = (event) => {
+  setValues((prev) => ({ ...(prev || {}), [event.target.name]: event.target.value }));
+}
 
-    }
     const handleSubmit=(event)=>{
         event.preventDefault();
-        (Validation(valuess));
+
+      const errors=(Validation(valuess));
+        if(errors.username==="" && errors.email==="" && errors.password===""){
+          axios.post('http://localhost:8081/signup',valuess)
+          .then(res=>{
+            if(res.data==="Success"){
+              alert("Registration Successful.")
+              navigate('/');
+            }
+            else if(res.data==="DataExists"){
+              alert("Data already registered.")
+            }
+          })
+          .catch(err=>console.log(err));
+        }
     }
 
 

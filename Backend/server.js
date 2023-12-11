@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 // MySQL Connection
 const db = mysql.createConnection({
@@ -14,48 +15,97 @@ const db = mysql.createConnection({
 });
 
 
-
-
-// API Endpoints
-
-// Example Signup Endpoint
 app.post('/signup', (req, res) => {
+  // Check if the email or username already exists
+  const checkDuplicateSql = "SELECT * FROM userinfo WHERE `email` = ? OR `username` = ?";
+  const checkDuplicateValues = [req.body.email, req.body.username];
 
-  // Perform validation and insert into the database
-  const sql = "INSERT INTO userinfo (`username`, `email`, `password`) VALUES (?)";
-  const value=[
-    req.body.name,
-    req.body.email,
-    req.body.password
-  ]
-  devicePixelRatio.query(sql,[values],(err,data)=>{
-    if(err){
-        return res.json("Error");
+  db.query(checkDuplicateSql, checkDuplicateValues, (checkErr, checkData) => {
+    if (checkErr) {
+      return res.json("Error");
     }
-    return res.json(data);
-  })
+
+    if (checkData.length > 0) {
+      // Data already exists
+      return res.json("DataExists");
+    }
+
+    // If no duplicate, proceed with the insertion
+    const insertSql = "INSERT INTO userinfo (`username`, `email`, `password`) VALUES (?)";
+    const insertValues = [
+      req.body.username,
+      req.body.email,
+      req.body.password
+    ];
+
+    db.query(insertSql, [insertValues], (insertErr, insertData) => {
+      if (insertErr) {
+        return res.json("Error");
+      }
+
+      return res.json("Success");
+    });
+  });
 });
 
-// // Example Login Endpoint
-// app.post('/api/login', (req, res) => {
-//   const { email, password } = req.body;
-
-//   // Perform validation and check credentials in the database
-//   const sql = 'SELECT * FROM users WHERE email = ? AND password = ?';
-//   db.query(sql, [email, password], (err, result) => {
-//     if (err) {
-//       console.error('MySQL query error:', err);
-//       res.status(500).json({ error: 'Internal Server Error' });
-//     } else if (result.length === 0) {
-//       res.status(401).json({ error: 'Invalid email or password' });
-//     } else {
-//       const user = result[0];
-//       res.status(200).json({ message: 'Login successful', user });
-//     }
-//   });
-// });
 
 
-app.listen(8081, ()=>{
-    console.log("Listening");
+
+
+app.post('/login', (req, res) => {
+
+  // Perform validation and insert into the database
+  const sql = "SELECT * FROM userinfo WHERE `email` = ?";
+  db.query(sql, [req.body.email], (err, data) => {
+    if (err) {
+      return res.json("Error");
+    }
+
+    if (data.length > 0) {
+      // If email exists in the database
+      const storedPassword = data[0].password;
+      if (storedPassword === req.body.password) {
+        // Passwords match
+        return res.json("Success");
+      } else {
+        // Password does not match
+        return res.json("PasswordMismatch");
+      }
+    }
+
+  })
+  // username here
+  // Perform validation and insert into the database
+  const sql1 = "SELECT * FROM userinfo WHERE `username` = ?";
+  db.query(sql1, [req.body.email], (err1, data1) => {
+    if (err1) {
+      return res.json("Error");
+    }
+
+    if (data1.length > 0) {
+      // If email exists in the database
+      const storedPassword = data1[0].password;
+      if (storedPassword === req.body.password) {
+        // Passwords match
+        return res.json("Success");
+      } else {
+        // Password does not match
+        return res.json("PasswordMismatch");
+      }
+    }
+    else {
+      // Username not found in the database
+      return res.json("Fail");
+    }
+
+  })
+
+
+
+}
+);
+
+
+app.listen(8081, () => {
+  console.log("Listening");
 })
